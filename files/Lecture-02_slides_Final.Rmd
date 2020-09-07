@@ -1,0 +1,349 @@
+---
+title: "BMI 713/BMIF 313qc Lecture 2: Program Flow"
+author: "Max Wolf & Ted Feldman(2019)"
+output:
+  
+  html_document: 
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  html_notebook: default
+  pdf_document: default
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = F)
+library(ggplot2)
+library(tidyverse)
+library(gridExtra)
+library(lubridate)
+library(neiss)
+library(reshape2)
+```
+
+## Learning Objectives
+
+Through today's session, students will:
+
+  1. be able to understand the direction in which R interprets code  
+  1. be able to understand and apply tools in R that permit us to change the direction of program flow, including functions, conditionals and loops
+  1. be able to identify the advantages of writing code in functions
+  1. be able to understand and apply how the nature of R provides alternative tools to directing program flow, including functions and vector operations
+  1. be able to compare and contrast the functionality of R's tools for matrix operations versus strategies for changing the direction of program flow
+  1. be familiar with basic plotting functions in R
+
+
+## Pre-Lecture Recap  
+
+- **Program Flow** or **Program Control Flow** is a swanky term for the order by which a set of instructions (i.e. code) gets interpreted in a computer program and by which they are executed.   
+
+- This flow is determined at run time (e.g. opening a program or pressing ``Run`` in R Studio) by the input data and by any **Control Structures**
+
+- *Functions* provide a means of modularizing a named sequence code or, routine (as pictured below), so that they can iteratively be used with different inputs and variable assignments without the need for extensive copying/pasting.  *Functions* typically have an output or *return a value*.
+
+## Pre-Lecture Review
+
+1. Let's revisit the function, *OneSDbelowMean* we discussed previously that calculates one standard deviation below the mean for a given numerical input.  Run *OneSDbelowMean* using the code below.  But, this time, **complete the function call using *x* instead of test** as the input to the function. 
+
+X contains the ages of all patients represented in a curated version of the NEISS dataset.  
+
+What value is returned by the function when you run the code?
+
+```{r echo=TRUE}
+
+library(neiss)                    #locad the curated data package
+data(injuries)                    #load the dataset
+names(injuries)
+
+x <-injuries$age                  #define the variable
+
+OneSDbelowMean<-function(x){      #define the function with x as input.  Inputs get put between ()s after function. 
+  sdbelow<- mean(x)-sd(x)         #body of function
+  return(sdbelow)                 #return statement
+}
+
+OneSDbelowMean(x)                 #Line you need to modify - function call 
+
+```
+
+### Plotting Checking to See if Our Answer Makes Sense
+
+It's always a good idea to see if your ouput makes sense.  Visualizations can help with this and there are a number of basic plots that can help.  One choice is a **boxplot**.
+
+**Boxplots show us the range of the data and highlight the median.  Let's take a look.
+
+```{r echo=TRUE}
+
+x <-injuries$age     #define the variable
+boxplot(x)
+```
+
+  
+## Writing Functions with default values
+
+If we run the pre-lecture question code without giving *OneSDBelowMean* an input, we get an error:
+
+```{r eval=FALSE, echo=TRUE}
+
+library(neiss)                    #locad the curated data package
+data(injuries)                    #load the dataset
+names(injuries)
+
+x <-injuries$age                  #define the variable
+
+OneSDbelowMean<-function(x){      #define the function with x as input.  Inputs get put between ()s after function. 
+  sdbelow<- mean(x)-sd(x)         #body of function
+  return(sdbelow)                 #return statement
+}
+
+OneSDbelowMean()                 #Line you need to modify - function call 
+
+```
+
+### Setting a default value
+
+Now let's try this again, but for troubleshooting, we'll input 0 into the function...
+
+```{r echo=TRUE}
+
+#library(neiss)                    #locad the curated data package
+#data(injuries)                    #load the dataset
+#names(injuries)
+
+x <-injuries$age                  #define the variable
+
+
+OneSDbelowMean<-function(x=0){      #define the function with x as input.  Inputs get put between ()s after function. 
+  sdbelow<- mean(x)-sd(x)         #body of function
+  return(sdbelow)                 #return statement
+}
+
+OneSDbelowMean()                
+
+```
+
+## Scope: Sharing data between functions and variables
+
+**Scope** refers to how visible a variable is to a function or to your program at large.
+
+- To illustrate, What value of $\texttt{test}$ is output by the code below?
+
+```{r eval= FALSE, echo=TRUE}
+
+library(neiss)                    #load the curated data package
+data(injuries)                    #load the dataset
+names(injuries)
+
+x <-injuries$age                  #define the variable
+y <- c(0,1)
+
+OneSDbelowMean<-function(x=0){      #define the function with x as input.  Inputs get put between ()s after function. 
+  # x <- c(y,x)
+  y <- c(y,1)
+  
+  sdbelow<- mean(x)-sd(x)         #body of function
+  
+  return(sdbelow)                 #return statement
+}
+OneSDbelowMean()
+#test <- sdbelow                 #Line you need to modify - function call 
+#test
+y
+```
+
+### Scope: What happened?
+
+  - R separates functions and associates variables inside the function in a separate environment from the rest of our code
+  
+  - An environment is a data structure that maps names to values stored elswhere in memory   
+
+  - Variables created outside of functions are stored to the global environment
+  
+  - Options for assigning variables to environments and sourcing functions in R
+
+## Conditionals: Making decisions to direct program flow 
+
+
+```{r echo=FALSE, out.width='30%'}
+library(knitr)
+knitr::include_graphics('D:/Work/CFProg/Courses/BMI713_2020/Lecture 2/lecture-02_figures/ConditionalFlowChart.jpg')
+```
+
+## Conditionals: Some examples 
+```{r echo=TRUE}
+y<-injuries$age                            #extract data
+set.seed(1)                                       #so we all get the same case
+one_case<-y[sample(1:length(y),1,replace=TRUE)]   #randomly pick a case 
+
+isYoung <- function(one_case, y) {                   #function with conditionals
+  if (one_case > mean(y)+sd(y)) {                 #note use of {}'s
+    return(0)
+  } else if (one_case< mean(y)-sd(y)) {          #note else if requires an                                                        arguement
+    return(1)
+  } else {                                        #else does not
+    return(-1)
+  }
+}
+
+mean(y)
+sd(y)
+one_case
+isYoung(one_case,y)
+```
+
+
+## More on conditionals  
+
+
+  - Addtional comparisons:  greater than or equal to $(>=)$, less than or equal to $(<=)$, and not equal to $(!=)$.
+    - Comparisons can also be combined with $&&$, which symbolizes logical "and". A vertical bar, $||$, which symbolizes logical "or". 
+    - Vectorized operations apply to multiple values and include:
+      - Or: $|$
+      - And: $&$
+      - Equality: $==$
+      - Can be collapsed to one value with $\texttt{any()}$ or $\texttt{all()}$
+
+## Conditionals are useful for checking values
+
+  - What would the output of this code be? 
+  
+```{r echo=TRUE, eval=FALSE}
+
+y<-injuries$age                                #extract data
+set.seed(5)                                         #so we all get the same case
+pick_case1<-y[sample(1:length(y),1,replace=TRUE)]   #randomly pick a case 
+pick_case1
+pick_case2<-y[sample(1:length(y),2,replace=TRUE)]
+pick_case2
+case_mean <- function(pick_case1, pick_case2) {                  
+  if (length(pick_case1) != length(pick_case2)){                 
+    stop("case '1' and '2' must be the same length", call. = FALSE)
+  } 
+  sum(pick_case1*pick_case2)/sum(pick_case1)
+}
+case_mean(pick_case1,pick_case2)  
+```
+  
+
+## Conditionals: ifelse example 
+
+```{r echo=TRUE}
+
+y<-injuries$age                                #extract data
+BeyondOneSD <- ifelse(y > mean(y)+sd(y),y,NA)
+ 
+```
+
+## Conditionals: Logical Subsetting
+  - You can also accomplish much of the functionality of conditionals with subsetting:
+  
+  - Data frames share characteristics of lists and matrices and can be subset in either way with some differences
+  
+```{r echo=TRUE}
+
+y<-injuries$age                               #extract data w/$
+y_matrix <- injuries[,3]                      #extract data with matrix                                                       subsetting
+y_list <- injuries[["age"]]                   #extract data w/list subsetting
+ 
+BeyondOneSD <- y[y > mean(y)+sd(y) & y < mean(y)+(2*sd(y))]
+LessOneSD <- y[y < mean(y)-sd(y)]
+head(BeyondOneSD)
+head(LessOneSD)
+
+```
+
+## Conditionals: Switches
+
+  - Useful to replace long chains of if statements:
+
+```{r echo=TRUE}
+y<-injuries$age
+stats <- function(y, calc) {
+switch(calc,
+         mean = mean(y),
+         median = median(y),
+         stdev = sd(y)
+)
+}
+stats(y, "mean")
+```
+
+### Checking the results: Plot a histogram
+
+```{r echo=TRUE}
+y<-injuries$age
+hist(y, xlab="Age", ylab="Frequency [cases]")
+```
+
+
+## For Loops: Iterating or repeating portions of code 
+
+
+```{r echo=FALSE, out.width='30%'}
+library(knitr)
+knitr::include_graphics('D:/Work/CFProg/Courses/BMI713_2020/Lecture 2/lecture-02_figures/Loop.jpg')
+```
+
+## For Loops: Basic building blocks {.smaller .build}
+
+- Output
+- Sequence
+- Body
+- Example:
+
+```{r echo=T}
+
+x<-data.frame(age=injuries$age,weight=injuries$weight)                      #subset of dataset
+
+results<- vector("double",ncol(x))  #allocate output vector (!important to do this before loop)
+for (ii in seq_along(x)){           #seq of for loop
+  results[[ii]] <-median(x[[ii]])     #loop body
+}
+results
+boxplot(x)
+```
+
+## Loop alternatives: apply
+
+- Family of related functions, including $\texttt{apply()}$, $\texttt{sapply()}$, $\texttt{lapply()}$
+- Example:
+
+```{r echo=TRUE}
+
+x<-data.frame(age=injuries$age,weight=injuries$weight)    #subset of dataset
+results<- apply(x,2,mean)           #note: requires 3 arguments
+results
+```
+
+## Where to Get Help?
+
+### Books
+
+  - __Learning R__
+    - Richard Cotton, O'Reilly (2015)
+    - [Available on Safari Books with Harvard Key](http://proquest.safaribooksonline.com.ezp-prod1.hul.harvard.edu/book/programming/r/9781449357160)
+    - referred to as _LR15_ ("for details see Chapter 3 of _LR15_")
+    
+  - __R for Data Science__ (Introduction to the Tidyverse)
+    - Hadley Wickham & Garrett Grolemund (2017)
+    - [Available on Safari Books with Harvard Key](http://proquest.safaribooksonline.com.ezp-prod1.hul.harvard.edu/book/programming/r/9781491910382)
+    - referred to as _RDS17_
+
+### Stack Overflow
+
+  - <https://stackoverflow.com/questions/tagged/r>
+
+#### Important considerations when using Stack Overflow
+
+  - Don't copy solutions!
+  - Make sure the answers that you are looking at are recent
+
+### Blogs and Websites
+
+  - <https://www.r-bloggers.com/> (syndicated R blogs)
+  - <http://hadley.nz/> (Hadley Wickham is Chief Scientist at RStudio)
+
+### Cheatsheets
+
+- <https://www.rstudio.com/resources/cheatsheets/>  
